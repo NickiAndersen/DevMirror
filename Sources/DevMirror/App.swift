@@ -71,11 +71,30 @@ struct DevMirrorApp: App {
         MenuBarExtra {
             MenuBarContentView(viewModel: appDelegate.viewModel)
         } label: {
+            let vm = appDelegate.viewModel
+            let color: Color = {
+                if vm.hasError { return .red }
+                if vm.isPaused { return .yellow }
+                switch vm.syncState {
+                case .scanning, .syncing: return .blue
+                case .idle: return .green
+                case .paused: return .yellow
+                case .error: return .red
+                }
+            }()
+            let icon: String = {
+                if vm.hasError { return "externaldrive.badge.xmark" }
+                if vm.isPaused { return "externaldrive" }
+                switch vm.syncState {
+                case .scanning, .syncing: return "externaldrive.badge.plus"
+                default: return "externaldrive"
+                }
+            }()
             HStack(spacing: 3) {
                 Circle()
-                    .fill(statusColor)
+                    .fill(color)
                     .frame(width: 7, height: 7)
-                Image(systemName: statusIcon)
+                Image(systemName: icon)
             }
         }
 
@@ -83,25 +102,5 @@ struct DevMirrorApp: App {
             SettingsView(viewModel: appDelegate.viewModel)
         }
         .windowResizability(.contentSize)
-    }
-
-    private var statusIcon: String {
-        if appDelegate.viewModel.hasError { return "externaldrive.badge.xmark" }
-        if appDelegate.viewModel.isPaused { return "externaldrive" }
-        switch appDelegate.viewModel.syncState {
-        case .scanning, .syncing: return "externaldrive.badge.plus"
-        default: return "externaldrive"
-        }
-    }
-
-    private var statusColor: Color {
-        if appDelegate.viewModel.hasError { return .red }
-        if appDelegate.viewModel.isPaused { return .yellow }
-        switch appDelegate.viewModel.syncState {
-        case .scanning, .syncing: return .blue
-        case .idle: return .green
-        case .paused: return .yellow
-        case .error: return .red
-        }
     }
 }
