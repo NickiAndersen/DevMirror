@@ -101,7 +101,7 @@ public final class SyncQueue: @unchecked Sendable {
     }
 
     private func flushPending() {
-        let paths: [String] = lock.withLock {
+        var paths: [String] = lock.withLock {
             guard !isPaused else { return [] }
             let paths = Array(pendingPaths)
             pendingPaths.removeAll()
@@ -109,9 +109,58 @@ public final class SyncQueue: @unchecked Sendable {
         }
         guard !paths.isEmpty else { return }
 
-        setState(.syncing(filesProcessed: 0, totalFiles: paths.count))
-        processBatch(paths, mode: .liveSync)
+        let (stable, unstable) = filterStablePaths(paths)
+
+        lock.withLock {
+            for path in unstable {
+                pendingPaths.insert(path)
+            }
+        }
+        if !unstable.isEmpty { scheduleDebounce() }
+
+        guard !stable.isEmpty else { return }
+
+        setState(.syncing(filesProcessed: 0, totalFiles: stable.count))
+        processBatch(stable, mode: .liveSync)
         setState(.idle)
+    }
+
+    private func filterStablePaths(_ paths: [String]) -> (stable: [String], unstable: [String]) {
+        let sourceBase = URL(fileURLWithPath: config.sourcePath)
+
+        let firstAttrs: [(String, Int64, Date)] = paths.compactMap { path in
+            let url = sourceBase.appendingPathComponent(path)
+            guard syncEngine.fileExists(at: url),
+                  let attrs = syncEngine.fileSizeAndModificationDate(at: url)
+            else { return nil }
+            return (path, attrs.size, attrs.mtime)
+        }
+
+        guard !firstAttrs.isEmpty else { return (paths, []) }
+
+        Thread.sleep(forTimeInterval: 0.15)
+
+        let firstMap: [String: (Int64, Date)] = Dictionary(
+            uniqueKeysWithValues: firstAttrs.map { ($0.0, ($0.1, $0.2)) }
+        )
+
+        var stable: [String] = []
+        var unstable: [String] = []
+
+        for path in paths {
+            let url = sourceBase.appendingPathComponent(path)
+            guard let (size1, mtime1) = firstMap[path],
+                  let attrs2 = syncEngine.fileSizeAndModificationDate(at: url),
+                  size1 == attrs2.size,
+                  abs(mtime1.timeIntervalSince(attrs2.mtime)) < 0.1
+            else {
+                unstable.append(path)
+                continue
+            }
+            stable.append(path)
+        }
+
+        return (stable, unstable)
     }
 
     private enum SyncMode {

@@ -75,9 +75,10 @@ struct DevMirrorApp: App {
                 .accessibilityLabel(menuBarTitle)
         }
 
-        Settings {
+        Window("DevMirror Settings", id: "settings") {
             SettingsView(viewModel: appDelegate.viewModel)
         }
+        .windowResizability(.contentSize)
     }
 
     private var menuBarIcon: String {

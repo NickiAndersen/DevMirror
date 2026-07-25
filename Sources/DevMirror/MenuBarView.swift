@@ -3,7 +3,7 @@ import MirrorCore
 
 struct MenuBarContentView: View {
     @Bindable var viewModel: AppViewModel
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -51,7 +51,8 @@ struct MenuBarContentView: View {
             }
 
             Button("Open Settings...") {
-                openSettings()
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
             }
 
             Divider()
