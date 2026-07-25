@@ -2,8 +2,18 @@ import SwiftUI
 import MirrorCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    let viewModel = AppViewModel()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.viewModel.startService()
+        }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        viewModel.stopService()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -14,38 +24,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct DevMirrorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @State private var viewModel = AppViewModel()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuBarContentView(viewModel: viewModel)
+            MenuBarContentView(viewModel: appDelegate.viewModel)
         } label: {
-            let label = menuBarLabel
-            Image(systemName: label.icon)
-                .accessibilityLabel(label.text)
+            Image(systemName: menuBarIcon)
+                .accessibilityLabel(menuBarTitle)
         }
 
         Settings {
-            SettingsView(viewModel: viewModel)
+            SettingsView(viewModel: appDelegate.viewModel)
         }
     }
 
-    private var menuBarLabel: (icon: String, text: String) {
-        if viewModel.hasError {
-            return ("externaldrive.badge.xmark", "DevMirror - Error")
+    private var menuBarIcon: String {
+        if appDelegate.viewModel.hasError {
+            return "externaldrive.badge.xmark"
         }
-        if viewModel.isPaused {
-            return ("externaldrive.badge.minus", "DevMirror - Paused")
+        if appDelegate.viewModel.isPaused {
+            return "externaldrive.badge.minus"
         }
-        switch viewModel.syncState {
+        switch appDelegate.viewModel.syncState {
         case .scanning, .syncing:
-            return ("externaldrive.badge.plus", "DevMirror - Syncing")
-        case .idle:
-            return ("externaldrive", "DevMirror")
-        case .paused:
-            return ("externaldrive.badge.minus", "DevMirror - Paused")
-        case .error:
-            return ("externaldrive.badge.xmark", "DevMirror - Error")
+            return "externaldrive.badge.plus"
+        default:
+            return "externaldrive"
+        }
+    }
+
+    private var menuBarTitle: String {
+        if appDelegate.viewModel.hasError { return "DevMirror - Error" }
+        if appDelegate.viewModel.isPaused { return "DevMirror - Paused" }
+        switch appDelegate.viewModel.syncState {
+        case .scanning, .syncing: return "DevMirror - Syncing"
+        default: return "DevMirror"
         }
     }
 }

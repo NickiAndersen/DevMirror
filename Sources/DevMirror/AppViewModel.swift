@@ -14,6 +14,7 @@ final class AppViewModel: @unchecked Sendable {
 
     private var syncQueue: SyncQueue?
     private var watcher: FSEventsWatcher?
+    private var activityToken: NSObjectProtocol?
 
     init() {
         let saved = StateStore.shared.loadConfig()
@@ -21,20 +22,39 @@ final class AppViewModel: @unchecked Sendable {
     }
 
     func startService() {
+        guard !isDestinationInsideSource() else {
+            hasError = true
+            errorMessage = "The backup folder is inside the source folder. This would cause infinite recursion. Please choose a backup folder outside ~/Developer."
+            return
+        }
+
+        guard FileManager.default.fileExists(atPath: config.sourcePath) else {
+            hasError = true
+            errorMessage = "Source folder not found: \(config.sourcePath)"
+            return
+        }
+
         stopService()
 
         syncState = .idle
         isPaused = false
         hasError = false
+        errorMessage = ""
 
         let queue = SyncQueue(config: config)
         queue.onStateChange = { [weak self] state in
-            let sself: AppViewModel? = self
+            guard let self = self else { return }
             DispatchQueue.main.async {
-                sself?.syncState = state
-                if case .error(let msg) = state {
-                    sself?.hasError = true
-                    sself?.errorMessage = msg
+                self.syncState = state
+                switch state {
+                case .scanning, .syncing:
+                    self.startActivity()
+                case .idle, .paused:
+                    self.endActivity()
+                case .error(let msg):
+                    self.hasError = true
+                    self.errorMessage = msg
+                    self.endActivity()
                 }
             }
         }
@@ -42,12 +62,10 @@ final class AppViewModel: @unchecked Sendable {
 
         let w = FSEventsWatcher(sourcePath: config.sourcePath)
         w.onEvents = { [weak self] paths in
-            let sself: AppViewModel? = self
-            sself?.syncQueue?.enqueue(paths)
+            self?.syncQueue?.enqueue(paths)
         }
         w.onOverflow = { [weak self] in
-            let sself: AppViewModel? = self
-            sself?.runFullScan()
+            self?.runFullScan()
         }
 
         let lastID = StateStore.shared.lastEventID() ?? UInt64(kFSEventStreamEventIdSinceNow)
@@ -58,9 +76,10 @@ final class AppViewModel: @unchecked Sendable {
     }
 
     func stopService() {
+        endActivity()
+        syncQueue = nil
         watcher?.stop()
         watcher = nil
-        syncQueue = nil
     }
 
     func togglePause() {
@@ -76,7 +95,8 @@ final class AppViewModel: @unchecked Sendable {
     func runFullScan() {
         let queue = syncQueue
         let w = watcher
-        Task.detached(priority: .utility) {
+        Task.detached(priority: .utility) { [weak self] in
+            guard let self = self else { return }
             do {
                 try queue?.runFullScan()
             } catch {
@@ -99,7 +119,6 @@ final class AppViewModel: @unchecked Sendable {
             errorMessage = "Failed to save settings: \(error.localizedDescription)"
             hasError = true
         }
-        stopService()
         startService()
     }
 
@@ -127,5 +146,27 @@ final class AppViewModel: @unchecked Sendable {
 
     var isLoginItemEnabled: Bool {
         SMAppService.mainApp.status == .enabled
+    }
+
+    // MARK: - Private
+
+    private func isDestinationInsideSource() -> Bool {
+        let src = URL(fileURLWithPath: config.sourcePath).standardizedFileURL.path
+        let dst = URL(fileURLWithPath: config.destinationPath).standardizedFileURL.path
+        return dst.hasPrefix(src + "/") || dst == src
+    }
+
+    private func startActivity() {
+        guard activityToken == nil else { return }
+        activityToken = ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiated, .idleSystemSleepDisabled],
+            reason: "File synchronization in progress"
+        )
+    }
+
+    private func endActivity() {
+        guard let token = activityToken else { return }
+        ProcessInfo.processInfo.endActivity(token)
+        activityToken = nil
     }
 }
