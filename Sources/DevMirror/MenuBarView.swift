@@ -29,8 +29,8 @@ struct MenuBarContentView: View {
             .foregroundStyle(.secondary)
             .padding(.leading, 14)
 
-            if viewModel.hasError {
-                VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 2) {
+                if viewModel.hasError {
                     Text("Error")
                         .font(.caption)
                         .foregroundStyle(.red)
@@ -39,11 +39,11 @@ struct MenuBarContentView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(3)
                 }
-                .padding(.top, 4)
             }
+            .frame(minHeight: viewModel.hasError ? nil : 0)
+            .clipped()
 
             Divider()
-                .padding(.top, 4)
 
             Button(viewModel.isPaused ? "Resume Syncing" : "Pause Syncing") {
                 viewModel.togglePause()
@@ -78,7 +78,7 @@ struct MenuBarContentView: View {
             .keyboardShortcut("q")
         }
         .padding()
-        .frame(minWidth: 240)
+        .frame(width: 240)
     }
 }
 
@@ -94,6 +94,7 @@ private struct StatusRow: View {
             Text(statusLabel)
                 .foregroundStyle(.secondary)
                 .font(.caption)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.vertical, 2)
     }
