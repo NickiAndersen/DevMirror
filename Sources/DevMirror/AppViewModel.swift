@@ -32,6 +32,7 @@ final class AppViewModel: @unchecked Sendable {
     private var activityToken: NSObjectProtocol?
     private var periodicTimer: Timer?
     private var lastSyncFileCount = 0
+    private var isFullScanRunning = false
     private var lastSyncTimestamp: Date?
 
     init() {
@@ -154,10 +155,12 @@ final class AppViewModel: @unchecked Sendable {
 
         let w = FSEventsWatcher(sourcePath: config.sourcePath)
         w.onEvents = { [weak self] paths in
-            self?.syncQueue?.enqueue(paths)
+            guard let self = self, !self.isFullScanRunning else { return }
+            self.syncQueue?.enqueue(paths)
         }
         w.onOverflow = { [weak self] in
-            self?.runFullScan()
+            guard let self = self, !self.isFullScanRunning else { return }
+            self.runFullScan()
         }
 
         if config.syncMode == .realtime {
@@ -193,12 +196,15 @@ final class AppViewModel: @unchecked Sendable {
     }
 
     func runFullScan() {
+        guard !isFullScanRunning else { return }
         hasError = false
         errorMessage = ""
+        isFullScanRunning = true
         let queue = syncQueue
         let w = watcher
         Task.detached(priority: .utility) { [weak self] in
             guard let self = self else { return }
+            defer { Task { @MainActor in self.isFullScanRunning = false } }
             do {
                 try queue?.runFullScan()
             } catch {
