@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ExclusionEngine {
+public struct ExclusionEngine: Sendable {
     public let config: MirrorConfig
 
     public init(config: MirrorConfig) {

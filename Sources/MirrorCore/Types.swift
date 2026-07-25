@@ -56,13 +56,14 @@ public struct MirrorConfig: Codable, Sendable {
     }()
 }
 
-public struct SyncEvent: Identifiable, Hashable, Sendable {
-    public let id = UUID()
+public struct SyncEvent: Identifiable, Hashable, Sendable, Codable {
+    public let id: UUID
     public let path: String
     public let action: String
     public let timestamp: Date
 
-    public init(path: String, action: String, timestamp: Date = Date()) {
+    public init(id: UUID = UUID(), path: String, action: String, timestamp: Date = Date()) {
+        self.id = id
         self.path = path
         self.action = action
         self.timestamp = timestamp
