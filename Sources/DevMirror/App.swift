@@ -57,7 +57,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.updateStatusIcon()
+            MainActor.assumeIsolated {
+                self?.updateStatusIcon()
+            }
         }
     }
 
@@ -157,11 +159,12 @@ extension Notification.Name {
 
 // Environment key so menu items can close the popover
 struct ClosePopoverKey: EnvironmentKey {
-    static let defaultValue: @Sendable () -> Void = {}
+    typealias Value = @Sendable () -> Void
+    static let defaultValue: Value = {}
 }
 
 extension EnvironmentValues {
-    var closePopover: () -> Void {
+    var closePopover: ClosePopoverKey.Value {
         get { self[ClosePopoverKey.self] }
         set { self[ClosePopoverKey.self] = newValue }
     }
