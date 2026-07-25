@@ -63,6 +63,10 @@ extension AppDelegate: NSWindowDelegate {
     }
 }
 
+extension Notification.Name {
+    static let devmirrorStateChanged = Notification.Name("devmirrorStateChanged")
+}
+
 @main
 struct DevMirrorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
