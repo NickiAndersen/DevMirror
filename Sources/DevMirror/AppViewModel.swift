@@ -110,15 +110,38 @@ final class AppViewModel: @unchecked Sendable {
     var trashSize: String {
         let url = URL(fileURLWithPath: trashPath)
         guard FileManager.default.fileExists(atPath: url.path) else { return "Empty" }
-        return url.formattedSize
+        let size = directorySize(at: url)
+        return ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+    }
+
+    private func directorySize(at url: URL) -> Int64 {
+        guard let enumerator = FileManager.default.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.fileSizeKey, .totalFileAllocatedSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else { return 0 }
+        var total: Int64 = 0
+        for case let fileURL as URL in enumerator {
+            guard let values = try? fileURL.resourceValues(forKeys: [.fileSizeKey, .totalFileAllocatedSizeKey]),
+                  let size = values.totalFileAllocatedSize ?? values.fileSize
+            else { continue }
+            total += Int64(size)
+        }
+        return total
     }
 
     var trashFileCount: Int {
         let url = URL(fileURLWithPath: trashPath)
         guard FileManager.default.fileExists(atPath: url.path),
-              let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: nil)
+              let enumerator = FileManager.default.enumerator(
+                at: url, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
         else { return 0 }
-        return enumerator.allObjects.count
+        var count = 0
+        for case let fileURL as URL in enumerator {
+            let isDir = (try? fileURL.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+            if !isDir { count += 1 }
+        }
+        return count
     }
 
     func emptyTrash() {
@@ -346,14 +369,5 @@ final class AppViewModel: @unchecked Sendable {
         guard let token = activityToken else { return }
         ProcessInfo.processInfo.endActivity(token)
         activityToken = nil
-    }
-}
-
-extension URL {
-    var formattedSize: String {
-        guard let values = try? resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey]),
-              let size = values.totalFileAllocatedSize ?? values.fileAllocatedSize
-        else { return "Empty" }
-        return ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
     }
 }
