@@ -13,9 +13,14 @@ struct MenuBarContentView: View {
 
             StatusRow(state: viewModel.syncState, isPaused: viewModel.isPaused)
 
-            Divider()
+            if !viewModel.config.sourcePath.isEmpty {
+                Text("\(viewModel.sourceFolderName) → \(viewModel.destinationFolderName)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
 
             if viewModel.hasError {
+                Divider()
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Error")
                         .font(.caption)
@@ -23,21 +28,26 @@ struct MenuBarContentView: View {
                     Text(viewModel.errorMessage)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(3)
                 }
-                Divider()
             }
+
+            Divider()
 
             Button(viewModel.isPaused ? "Resume Syncing" : "Pause Syncing") {
                 viewModel.togglePause()
             }
 
-            Button("Scan Now") {
+            Button("Sync Now") {
                 viewModel.runFullScan()
             }
             .disabled(viewModel.isPaused)
 
             Divider()
+
+            Button("Open Backup Folder") {
+                viewModel.openBackupInFinder()
+            }
 
             Button("Open Settings...") {
                 NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
@@ -52,7 +62,7 @@ struct MenuBarContentView: View {
             .keyboardShortcut("q")
         }
         .padding()
-        .frame(minWidth: 220)
+        .frame(minWidth: 240)
     }
 }
 

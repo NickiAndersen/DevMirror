@@ -1,14 +1,23 @@
 import SwiftUI
 import MirrorCore
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     let viewModel = AppViewModel()
+    private var onboardingWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.viewModel.startService()
+        if viewModel.hasCompletedOnboarding {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.viewModel.startService()
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                MainActor.assumeIsolated {
+                    self?.showOnboarding()
+                }
+            }
         }
     }
 
@@ -18,6 +27,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    @MainActor private func showOnboarding() {
+        let vm = viewModel
+        let contentView = OnboardingView(viewModel: vm) { [weak self] in
+            self?.viewModel.hasCompletedOnboarding = true
+            self?.onboardingWindow?.close()
+            self?.onboardingWindow = nil
+            self?.viewModel.startService()
+        }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 420),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.center()
+        window.title = "Welcome to DevMirror"
+        window.contentView = NSHostingView(rootView: contentView)
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        onboardingWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+extension AppDelegate: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        if !viewModel.hasCompletedOnboarding {
+            NSApp.terminate(nil)
+        }
     }
 }
 

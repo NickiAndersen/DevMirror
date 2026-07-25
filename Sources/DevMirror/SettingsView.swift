@@ -24,17 +24,28 @@ struct SettingsView: View {
 
 private struct GeneralPane: View {
     @Bindable var viewModel: AppViewModel
+    @State private var validationMessage: String?
+    @State private var validationIsWarning = false
 
     var body: some View {
         Form {
             Section("Folders") {
-                LabeledContent("Source:") {
-                    TextField("~/Developer", text: $viewModel.config.sourcePath)
-                        .textFieldStyle(.roundedBorder)
+                FolderPicker(label: "Source (folder to back up):", path: $viewModel.config.sourcePath) {
+                    validate()
                 }
-                LabeledContent("Destination:") {
-                    TextField("~/Documents/DeveloperBackup", text: $viewModel.config.destinationPath)
-                        .textFieldStyle(.roundedBorder)
+
+                FolderPicker(label: "Destination (backup location):", path: $viewModel.config.destinationPath) {
+                    validate()
+                }
+
+                if let msg = validationMessage {
+                    HStack(spacing: 6) {
+                        Image(systemName: validationIsWarning ? "exclamationmark.triangle.fill" : "xmark.circle.fill")
+                            .foregroundStyle(validationIsWarning ? .orange : .red)
+                        Text(msg)
+                            .font(.caption)
+                            .foregroundStyle(validationIsWarning ? .orange : .red)
+                    }
                 }
             }
 
@@ -66,14 +77,41 @@ private struct GeneralPane: View {
                         viewModel.applyConfig()
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(!canApply)
 
                     Button("Revert") {
                         viewModel.config = StateStore.shared.loadConfig()
+                        validationMessage = nil
                     }
                 }
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var canApply: Bool {
+        let result = viewModel.validatePaths(
+            source: viewModel.config.sourcePath,
+            destination: viewModel.config.destinationPath
+        )
+        return result.isValid
+    }
+
+    private func validate() {
+        let result = viewModel.validatePaths(
+            source: viewModel.config.sourcePath,
+            destination: viewModel.config.destinationPath
+        )
+        if !result.isValid {
+            validationMessage = result.message
+            validationIsWarning = false
+        } else if result.isWarning {
+            validationMessage = result.message
+            validationIsWarning = true
+        } else {
+            validationMessage = nil
+            validationIsWarning = false
+        }
     }
 
     private var loginItemBinding: Binding<Bool> {
@@ -190,11 +228,11 @@ private struct AboutPane: View {
             Text("Version 1.0")
                 .foregroundStyle(.secondary)
 
-            Text("Automatically mirrors ~/Developer to ~/Documents/DeveloperBackup")
+            Text("Keep any folder backed up automatically.\nChanges are mirrored in real time.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            Text("Changes are synced in real time. The backup folder is monitored by Google Drive for cloud backup.")
+            Text("Choose a source folder to watch, and a destination\nfolder to keep an exact mirror. Exclude build/cache\nfolders for lean, fast backups.")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.tertiary)

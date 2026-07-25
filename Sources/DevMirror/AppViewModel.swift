@@ -1,5 +1,6 @@
 import Observation
 import Foundation
+import AppKit
 import MirrorCore
 import ServiceManagement
 
@@ -19,6 +20,59 @@ final class AppViewModel: @unchecked Sendable {
     init() {
         let saved = StateStore.shared.loadConfig()
         config = saved
+    }
+
+    var hasCompletedOnboarding: Bool {
+        get { UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "hasCompletedOnboarding")
+            if newValue { try? StateStore.shared.save(config: config) }
+        }
+    }
+
+    var sourceFolderName: String {
+        URL(fileURLWithPath: config.sourcePath).lastPathComponent
+    }
+
+    var destinationFolderName: String {
+        URL(fileURLWithPath: config.destinationPath).lastPathComponent
+    }
+
+    func validatePaths(source: String, destination: String) -> (isValid: Bool, message: String?, isWarning: Bool) {
+        guard !source.isEmpty, !destination.isEmpty else {
+            return (false, "Both folders must be selected.", false)
+        }
+        let srcURL = URL(fileURLWithPath: source).standardizedFileURL
+        let dstURL = URL(fileURLWithPath: destination).standardizedFileURL
+
+        if srcURL.path == dstURL.path {
+            return (false, "Source and destination cannot be the same folder.", false)
+        }
+        if dstURL.path.hasPrefix(srcURL.path + "/") {
+            return (false, "Destination is inside the source folder.", false)
+        }
+        if srcURL.path.hasPrefix(dstURL.path + "/") {
+            return (false, "Source is inside the destination folder.", false)
+        }
+
+        var isDir: ObjCBool = false
+        if !FileManager.default.fileExists(atPath: srcURL.path, isDirectory: &isDir) || !isDir.boolValue {
+            return (false, "Source folder does not exist.", false)
+        }
+        if isCloudSyncedFolder(dstURL.path) {
+            return (true, "This folder appears to be synced by iCloud or Dropbox. For best results, use a Google Drive-synced or local folder.", true)
+        }
+        return (true, nil, false)
+    }
+
+    func isCloudSyncedFolder(_ path: String) -> Bool {
+        return path.contains("Library/Mobile Documents") ||
+               path.contains("/Dropbox/") ||
+               path.contains("/OneDrive/")
+    }
+
+    func openBackupInFinder() {
+        NSWorkspace.shared.open(URL(fileURLWithPath: config.destinationPath))
     }
 
     func startService() {
