@@ -4,6 +4,7 @@ import MirrorCore
 struct MenuBarContentView: View {
     @Bindable var viewModel: AppViewModel
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.closePopover) private var closePopover
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -47,10 +48,12 @@ struct MenuBarContentView: View {
 
             Button(viewModel.isPaused ? "Resume Syncing" : "Pause Syncing") {
                 viewModel.togglePause()
+                closePopover()
             }
 
             Button("Sync Now") {
                 viewModel.runFullScan()
+                closePopover()
             }
             .disabled(viewModel.isPaused)
 
@@ -58,15 +61,18 @@ struct MenuBarContentView: View {
 
             Button("Open Backup Folder") {
                 viewModel.openBackupInFinder()
+                closePopover()
             }
 
             Button("Open Source Folder") {
                 viewModel.openSourceInFinder()
+                closePopover()
             }
 
             Button("Open Settings...") {
                 openWindow(id: "settings")
                 NSApp.activate(ignoringOtherApps: true)
+                closePopover()
             }
 
             Divider()
