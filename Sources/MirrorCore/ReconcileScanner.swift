@@ -82,6 +82,15 @@ public struct ReconcileScanner {
 
                 sourcePaths.insert(relativePath)
 
+                // Pre-check: skip files that are corrupted/unreadable (e.g. decmpfs failures)
+                guard syncEngine.isReadable(at: url) else {
+                    StateStore.shared.logEvent(SyncEvent(
+                        path: relativePath,
+                        action: "skipped_unreadable"
+                    ))
+                    continue
+                }
+
                 if !syncEngine.fileExists(at: destFileURL) {
                     toCopy.append(relativePath)
                 } else if !syncEngine.filesMatch(source: url, dest: destFileURL) {

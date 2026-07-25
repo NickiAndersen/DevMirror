@@ -1,5 +1,4 @@
 import Foundation
-import Darwin.POSIX
 
 public enum SyncError: Error {
     case copyFailed(path: String, message: String)
@@ -23,8 +22,7 @@ public final class SyncEngine: @unchecked Sendable {
             return
         }
 
-        let isDir = isDirectory(at: source)
-        if isDir {
+        if isDirectory(at: source) {
             try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
             return
         }
@@ -33,13 +31,7 @@ public final class SyncEngine: @unchecked Sendable {
 
         defer { try? fileManager.removeItem(at: tempURL) }
 
-        let flags = copyfile_flags_t(COPYFILE_DATA | COPYFILE_STAT | COPYFILE_CLONE)
-        let result = copyfile(source.path, tempURL.path, nil, flags)
-
-        if result != 0 {
-            // Fall back to simple FileManager copy for files with problematic metadata
-            try fileManager.copyItem(at: source, to: tempURL)
-        }
+        try fileManager.copyItem(at: source, to: tempURL)
 
         if fileManager.fileExists(atPath: destination.path) {
             try fileManager.removeItem(at: destination)
@@ -62,6 +54,34 @@ public final class SyncEngine: @unchecked Sendable {
         let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
         guard let mtime = attrs[.modificationDate] as? Date else { return nil }
         return (size, mtime)
+    }
+
+    public func isReadable(at url: URL) -> Bool {
+        guard isRegularFile(at: url) else { return true }
+        let sem = DispatchSemaphore(value: 0)
+        var readable = false
+
+        DispatchQueue.global(qos: .utility).async {
+            let fd = open(url.path, O_RDONLY)
+            guard fd >= 0 else { sem.signal(); return }
+            defer { close(fd) }
+            var buf: UInt8 = 0
+            readable = (pread(fd, &buf, 1, 0) == 1)
+            sem.signal()
+        }
+
+        if sem.wait(timeout: .now() + 3.0) == .timedOut {
+            return false
+        }
+        return readable
+    }
+
+    private func isRegularFile(at url: URL) -> Bool {
+        var isDir: ObjCBool = false
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDir) else { return false }
+        if isDir.boolValue { return false }
+        if isSymlink(at: url) { return false }
+        return true
     }
 
     public func isDirectory(at url: URL) -> Bool {
