@@ -14,26 +14,26 @@ struct MenuBarContentView: View {
 
             StatusRow(state: viewModel.syncState, isPaused: viewModel.isPaused)
 
-            if !viewModel.config.sourcePath.isEmpty {
-                Text("\(viewModel.sourceFolderName) → \(viewModel.destinationFolderName)")
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
+            Text(viewModel.config.syncMode.displayName)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .padding(.leading, 14)
 
-            if viewModel.hasError {
-                Divider()
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Error")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                    Text(viewModel.errorMessage)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                }
+            HStack(spacing: 0) {
+                Text(viewModel.sourceFolderName)
+                Text(" → ")
+                    .foregroundStyle(.tertiary)
+                Text(viewModel.destinationFolderName)
             }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.leading, 14)
+
+            errorSection
+                .padding(.top, 4)
 
             Divider()
+                .padding(.top, 4)
 
             Button(viewModel.isPaused ? "Resume Syncing" : "Pause Syncing") {
                 viewModel.togglePause()
@@ -48,6 +48,10 @@ struct MenuBarContentView: View {
 
             Button("Open Backup Folder") {
                 viewModel.openBackupInFinder()
+            }
+
+            Button("Open Source Folder") {
+                viewModel.openSourceInFinder()
             }
 
             Button("Open Settings...") {
@@ -65,6 +69,24 @@ struct MenuBarContentView: View {
         }
         .padding()
         .frame(minWidth: 240)
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private var errorSection: some View {
+        let hasError = viewModel.hasError
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Error")
+                .font(.caption)
+                .foregroundStyle(.red)
+            Text(viewModel.errorMessage)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+        }
+        .opacity(hasError ? 1 : 0)
+        .frame(height: hasError ? nil : 0, alignment: .top)
+        .clipped()
     }
 }
 

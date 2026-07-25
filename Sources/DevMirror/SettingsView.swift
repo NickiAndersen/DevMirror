@@ -18,7 +18,7 @@ struct SettingsView: View {
             AboutPane()
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
-        .frame(width: 520, height: 440)
+        .frame(width: 520, height: 520)
     }
 }
 
@@ -30,11 +30,11 @@ private struct GeneralPane: View {
     var body: some View {
         Form {
             Section("Folders") {
-                FolderPicker(label: "Source (folder to back up):", path: $viewModel.config.sourcePath) {
+                FolderPicker(label: "Source:", path: $viewModel.config.sourcePath) {
                     validate()
                 }
 
-                FolderPicker(label: "Destination (backup location):", path: $viewModel.config.destinationPath) {
+                FolderPicker(label: "Destination:", path: $viewModel.config.destinationPath) {
                     validate()
                 }
 
@@ -49,12 +49,16 @@ private struct GeneralPane: View {
                 }
             }
 
-            Section("Sync Options") {
+            Section {
                 Picker("Sync frequency:", selection: $viewModel.config.syncMode) {
                     ForEach(SyncMode.allCases, id: \.self) { mode in
                         Text(mode.displayName).tag(mode)
                     }
                 }
+
+                Text(syncModeDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Toggle("Include .git folders", isOn: $viewModel.config.includeGitFolders)
 
@@ -73,12 +77,19 @@ private struct GeneralPane: View {
                         Text("90 days").tag(90)
                     }
                 }
+            } header: {
+                Text("Sync")
             }
 
-            Section("Startup") {
+            Section("Notifications") {
+                Toggle("When sync completes", isOn: $viewModel.showNotificationOnComplete)
+                Toggle("When errors occur", isOn: $viewModel.showNotificationOnError)
+            }
+
+            Section {
                 Toggle("Launch at login", isOn: loginItemBinding)
 
-                HStack {
+                HStack(spacing: 12) {
                     Button("Apply & Restart Sync") {
                         viewModel.applyConfig()
                     }
@@ -90,14 +101,22 @@ private struct GeneralPane: View {
                         validationMessage = nil
                     }
                 }
-            }
-
-            Section("Notifications") {
-                Toggle("Sync complete", isOn: $viewModel.showNotificationOnComplete)
-                Toggle("Sync errors", isOn: $viewModel.showNotificationOnError)
+            } header: {
+                Text("Startup")
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var syncModeDescription: String {
+        switch viewModel.config.syncMode {
+        case .realtime:
+            return "Changes are synced immediately as they happen."
+        case .every5min, .every15min, .every30min, .everyHour:
+            return "The source folder is scanned at the chosen interval."
+        case .manual:
+            return "Sync only runs when you click Sync Now in the menu bar."
+        }
     }
 
     private var canApply: Bool {
@@ -239,11 +258,11 @@ private struct AboutPane: View {
             Text("Version 1.0")
                 .foregroundStyle(.secondary)
 
-            Text("Keep any folder backed up automatically.\nChanges are mirrored in real time.")
+            Text("Mirrors a folder to a backup location in real time.\nExcludes build/cache folders for lean copies.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            Text("Choose a source folder to watch, and a destination\nfolder to keep an exact mirror. Exclude build/cache\nfolders for lean, fast backups.")
+            Text("Choose a source folder to watch, and a destination folder to keep an exact mirror.")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.tertiary)
