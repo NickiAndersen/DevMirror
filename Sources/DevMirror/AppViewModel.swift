@@ -3,24 +3,41 @@ import Foundation
 import AppKit
 import MirrorCore
 import ServiceManagement
+import UserNotifications
 
 @Observable
 final class AppViewModel: @unchecked Sendable {
     var syncState: SyncState = .idle
-    var config: MirrorConfig = .default
+    var config: MirrorConfig
     var recentEvents: [SyncEvent] = []
     var isPaused = false
     var hasError = false
     var errorMessage = ""
 
+    var showNotificationOnComplete: Bool {
+        get { UserDefaults.standard.object(forKey: "notifyOnComplete") as? Bool ?? false }
+        set { UserDefaults.standard.set(newValue, forKey: "notifyOnComplete") }
+    }
+
+    var showNotificationOnError: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: "notifyOnError") == nil { return true }
+            return UserDefaults.standard.bool(forKey: "notifyOnError")
+        }
+        set { UserDefaults.standard.set(newValue, forKey: "notifyOnError") }
+    }
+
     private var syncQueue: SyncQueue?
     private var watcher: FSEventsWatcher?
     private var activityToken: NSObjectProtocol?
     private var periodicTimer: Timer?
+    private var lastSyncFileCount = 0
+    private var lastSyncTimestamp: Date?
 
     init() {
         let saved = StateStore.shared.loadConfig()
         config = saved
+        requestNotificationPermission()
     }
 
     var hasCompletedOnboarding: Bool {
@@ -38,6 +55,8 @@ final class AppViewModel: @unchecked Sendable {
     var destinationFolderName: String {
         URL(fileURLWithPath: config.destinationPath).lastPathComponent
     }
+
+    // MARK: - Validation
 
     func validatePaths(source: String, destination: String) -> (isValid: Bool, message: String?, isWarning: Bool) {
         guard !source.isEmpty, !destination.isEmpty else {
@@ -76,10 +95,16 @@ final class AppViewModel: @unchecked Sendable {
         NSWorkspace.shared.open(URL(fileURLWithPath: config.destinationPath))
     }
 
+    func openSourceInFinder() {
+        NSWorkspace.shared.open(URL(fileURLWithPath: config.sourcePath))
+    }
+
+    // MARK: - Service
+
     func startService() {
         guard !isDestinationInsideSource() else {
             hasError = true
-            errorMessage = "The backup folder is inside the source folder. This would cause infinite recursion. Please choose a backup folder outside ~/Developer."
+            errorMessage = "The backup folder is inside the source folder. This would cause infinite recursion. Please choose a backup folder outside the source folder."
             return
         }
 
@@ -95,6 +120,7 @@ final class AppViewModel: @unchecked Sendable {
         isPaused = false
         hasError = false
         errorMessage = ""
+        lastSyncFileCount = 0
 
         let queue = SyncQueue(config: config)
         queue.onStateChange = { [weak self] state in
@@ -104,12 +130,23 @@ final class AppViewModel: @unchecked Sendable {
                 switch state {
                 case .scanning, .syncing:
                     self.startActivity()
-                case .idle, .paused:
+                    if case .syncing(_, let total) = state {
+                        self.lastSyncFileCount = total
+                    }
+                case .idle:
+                    self.endActivity()
+                    if self.lastSyncFileCount > 0 {
+                        self.lastSyncTimestamp = Date()
+                        self.sendCompletionNotification(fileCount: self.lastSyncFileCount)
+                        self.lastSyncFileCount = 0
+                    }
+                case .paused:
                     self.endActivity()
                 case .error(let msg):
                     self.hasError = true
                     self.errorMessage = msg
                     self.endActivity()
+                    self.sendErrorNotification(msg)
                 }
             }
         }
@@ -151,6 +188,7 @@ final class AppViewModel: @unchecked Sendable {
         } else {
             syncQueue?.pause()
             isPaused = true
+            sendNotification(title: "Syncing paused", body: "Tap Resume in the menu bar to continue.")
         }
     }
 
@@ -208,6 +246,40 @@ final class AppViewModel: @unchecked Sendable {
 
     var isLoginItemEnabled: Bool {
         SMAppService.mainApp.status == .enabled
+    }
+
+    // MARK: - Notifications
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+    }
+
+    private func sendNotification(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func sendCompletionNotification(fileCount: Int) {
+        guard showNotificationOnComplete else { return }
+        let time = DateFormatter()
+        time.timeStyle = .short
+        sendNotification(
+            title: "Sync complete",
+            body: "\(fileCount) files synced at \(time.string(from: Date()))"
+        )
+    }
+
+    private func sendErrorNotification(_ msg: String) {
+        guard showNotificationOnError else { return }
+        sendNotification(title: "Sync error", body: msg)
     }
 
     // MARK: - Private

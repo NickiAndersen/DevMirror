@@ -71,8 +71,13 @@ struct DevMirrorApp: App {
         MenuBarExtra {
             MenuBarContentView(viewModel: appDelegate.viewModel)
         } label: {
-            Image(systemName: menuBarIcon)
-                .accessibilityLabel(menuBarTitle)
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 8, height: 8)
+                Text(statusLabel)
+                    .font(.caption)
+            }
         }
 
         Window("DevMirror Settings", id: "settings") {
@@ -81,27 +86,28 @@ struct DevMirrorApp: App {
         .windowResizability(.contentSize)
     }
 
-    private var menuBarIcon: String {
-        if appDelegate.viewModel.hasError {
-            return "externaldrive.badge.xmark"
-        }
-        if appDelegate.viewModel.isPaused {
-            return "externaldrive.badge.minus"
-        }
+    private var statusColor: Color {
+        if appDelegate.viewModel.hasError { return .red }
+        if appDelegate.viewModel.isPaused { return .yellow }
         switch appDelegate.viewModel.syncState {
-        case .scanning, .syncing:
-            return "externaldrive.badge.plus"
-        default:
-            return "externaldrive"
+        case .scanning, .syncing: return .blue
+        case .idle: return .green
+        case .paused: return .yellow
+        case .error: return .red
         }
     }
 
-    private var menuBarTitle: String {
-        if appDelegate.viewModel.hasError { return "DevMirror - Error" }
-        if appDelegate.viewModel.isPaused { return "DevMirror - Paused" }
-        switch appDelegate.viewModel.syncState {
-        case .scanning, .syncing: return "DevMirror - Syncing"
-        default: return "DevMirror"
+    private var statusLabel: String {
+        let vm = appDelegate.viewModel
+        if vm.hasError { return "Error" }
+        if vm.isPaused { return "Paused" }
+        switch vm.syncState {
+        case .idle: return "\(vm.sourceFolderName) → \(vm.destinationFolderName)"
+        case .scanning: return "Scanning..."
+        case .syncing(let done, let total):
+            return total > 0 ? "\(done)/\(total)" : "Syncing..."
+        case .paused: return "Paused"
+        case .error: return "Error"
         }
     }
 }

@@ -91,6 +91,11 @@ private struct GeneralPane: View {
                     }
                 }
             }
+
+            Section("Notifications") {
+                Toggle("Sync complete", isOn: $viewModel.showNotificationOnComplete)
+                Toggle("Sync errors", isOn: $viewModel.showNotificationOnError)
+            }
         }
         .formStyle(.grouped)
     }
