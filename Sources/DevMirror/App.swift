@@ -83,9 +83,9 @@ struct DevMirrorApp: App {
                     .frame(width: 7, height: 7)
                 Image(systemName: barIcon)
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .devmirrorStateChanged)) { _ in
-            refreshStatus()
+            .onReceive(NotificationCenter.default.publisher(for: .devmirrorStateChanged)) { _ in
+                refreshStatus()
+            }
         }
 
         Window("DevMirror Settings", id: "settings") {
