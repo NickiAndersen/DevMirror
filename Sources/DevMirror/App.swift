@@ -4,8 +4,8 @@ import MirrorCore
 final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     let viewModel = AppViewModel()
     private var onboardingWindow: NSWindow?
+    private var settingsWindow: NSWindow?
     private var statusItem: NSStatusItem?
-    private var popover: NSPopover?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -38,18 +38,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
             button.target = self
-            button.action = #selector(togglePopover)
+            button.action = #selector(statusItemClicked)
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
-        popover = NSPopover()
-        popover?.contentSize = NSSize(width: 260, height: 380)
-        popover?.behavior = .transient
-        popover?.contentViewController = NSHostingController(
-            rootView: MenuBarContentView(viewModel: viewModel)
-                .environment(\.closePopover, { [weak self] in
-                    self?.popover?.close()
-                })
-        )
         updateStatusIcon()
 
         NotificationCenter.default.addObserver(
@@ -63,14 +54,124 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
     }
 
-    @MainActor @objc private func togglePopover() {
-        guard let popover = popover, let button = statusItem?.button else { return }
-        if popover.isShown {
-            popover.close()
-        } else {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            popover.contentViewController?.view.window?.makeKey()
+    @MainActor @objc private func statusItemClicked() {
+        guard let button = statusItem?.button else { return }
+        let menu = buildMenu()
+        statusItem?.menu = menu
+        button.performClick(nil)
+        statusItem?.menu = nil
+    }
+
+    @MainActor private func buildMenu() -> NSMenu {
+        let menu = NSMenu()
+        let vm = viewModel
+
+        // Header
+        let headerItem = NSMenuItem()
+        headerItem.title = "DevMirror"
+        headerItem.isEnabled = false
+        menu.addItem(headerItem)
+        menu.addItem(.separator())
+
+        // Status
+        let statusLabel: String
+        if vm.hasError { statusLabel = "Error" }
+        else if vm.isPaused { statusLabel = "Paused" }
+        else {
+            switch vm.syncState {
+            case .idle: statusLabel = "● Watching for changes"
+            case .scanning: statusLabel = "◉ Scanning..."
+            case .syncing(let done, let total): statusLabel = "◉ Syncing \(done)/\(total)"
+            case .paused: statusLabel = "● Paused"
+            case .error: statusLabel = "● Error"
+            }
         }
+        let statusItem = NSMenuItem()
+        statusItem.title = statusLabel
+        statusItem.isEnabled = false
+        menu.addItem(statusItem)
+
+        // Interval
+        let intervalItem = NSMenuItem()
+        intervalItem.title = "   \(vm.config.syncMode.displayName)"
+        intervalItem.isEnabled = false
+        intervalItem.attributedTitle = NSAttributedString(
+            string: "   \(vm.config.syncMode.displayName)",
+            attributes: [.font: NSFont.menuFont(ofSize: NSFont.smallSystemFontSize),
+                         .foregroundColor: NSColor.secondaryLabelColor]
+        )
+        menu.addItem(intervalItem)
+
+        // Folders
+        let folderItem = NSMenuItem()
+        folderItem.title = "   \(vm.sourceFolderName) → \(vm.destinationFolderName)"
+        folderItem.isEnabled = false
+        folderItem.attributedTitle = NSAttributedString(
+            string: "   \(vm.sourceFolderName) → \(vm.destinationFolderName)",
+            attributes: [.font: NSFont.menuFont(ofSize: NSFont.smallSystemFontSize),
+                         .foregroundColor: NSColor.secondaryLabelColor]
+        )
+        menu.addItem(folderItem)
+
+        // Error
+        if vm.hasError {
+            let errItem = NSMenuItem()
+            errItem.title = "⚠ \(vm.errorMessage)"
+            errItem.isEnabled = false
+            errItem.attributedTitle = NSAttributedString(
+                string: "⚠ \(vm.errorMessage)",
+                attributes: [.font: NSFont.menuFont(ofSize: NSFont.smallSystemFontSize),
+                             .foregroundColor: NSColor.systemRed]
+            )
+            menu.addItem(errItem)
+        }
+
+        menu.addItem(.separator())
+
+        // Actions
+        let pauseTitle = vm.isPaused ? "Resume Syncing" : "Pause Syncing"
+        menu.addItem(NSMenuItem(title: pauseTitle, action: #selector(menuPauseResume), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Sync Now", action: #selector(menuSyncNow), keyEquivalent: ""))
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Open Backup Folder", action: #selector(menuOpenBackup), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Open Source Folder", action: #selector(menuOpenSource), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Open Settings...", action: #selector(menuOpenSettings), keyEquivalent: ","))
+        menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Quit DevMirror", action: #selector(menuQuit), keyEquivalent: "q"))
+
+        for item in menu.items where item.action != nil {
+            item.target = self
+        }
+
+        return menu
+    }
+
+    @objc private func menuPauseResume() { viewModel.togglePause() }
+    @objc private func menuSyncNow() { viewModel.runFullScan() }
+    @objc private func menuOpenBackup() { viewModel.openBackupInFinder() }
+    @objc private func menuOpenSource() { viewModel.openSourceInFinder() }
+    @objc private func menuOpenSettings() { openSettings() }
+    @objc private func menuQuit() { viewModel.stopService(); NSApp.terminate(nil) }
+
+    private func openSettings() {
+        if let window = settingsWindow, window.isVisible {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 520, height: 520),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.center()
+            window.title = "DevMirror Settings"
+            window.contentView = NSHostingView(rootView: SettingsView(viewModel: viewModel))
+            window.isReleasedWhenClosed = false
+            window.delegate = self
+            settingsWindow = window
+        }
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @MainActor func updateStatusIcon() {
@@ -158,26 +259,13 @@ extension Notification.Name {
 }
 
 // Environment key so menu items can close the popover
-struct ClosePopoverKey: EnvironmentKey {
-    typealias Value = @Sendable () -> Void
-    static let defaultValue: Value = {}
-}
-
-extension EnvironmentValues {
-    var closePopover: ClosePopoverKey.Value {
-        get { self[ClosePopoverKey.self] }
-        set { self[ClosePopoverKey.self] = newValue }
-    }
-}
-
 @main
 struct DevMirrorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        Window("DevMirror Settings", id: "settings") {
-            SettingsView(viewModel: appDelegate.viewModel)
+        Settings {
+            EmptyView()
         }
-        .windowResizability(.contentSize)
     }
 }
