@@ -287,8 +287,15 @@ private struct AboutPane: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.tertiary)
                 .padding(.horizontal)
+
+            Spacer()
+
+            Text("Made by THYRING")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, 12)
     }
 }
 
