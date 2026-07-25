@@ -293,6 +293,10 @@ private struct AboutPane: View {
             Text("Made by THYRING")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+
+            Link("www.thyring.com", destination: URL(string: "https://www.thyring.com")!)
+                .font(.caption)
+                .foregroundStyle(.blue)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, 12)

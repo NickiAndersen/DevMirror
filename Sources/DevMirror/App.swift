@@ -147,6 +147,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         menu.addItem(NSMenuItem(title: "Open Source Folder", action: #selector(menuOpenSource), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Open Settings...", action: #selector(menuOpenSettings), keyEquivalent: ","))
         menu.addItem(.separator())
+        menu.addItem(NSMenuItem(title: "Visit thyring.com", action: #selector(menuVisitSite), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Quit DevMirror", action: #selector(menuQuit), keyEquivalent: "q"))
 
         for item in menu.items where item.action != nil {
@@ -162,6 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
     @objc private func menuOpenSource() { viewModel.openSourceInFinder() }
     @objc private func menuOpenSettings() { openSettings() }
     @objc private func menuQuit() { viewModel.stopService(); NSApp.terminate(nil) }
+    @objc private func menuVisitSite() { NSWorkspace.shared.open(URL(string: "https://www.thyring.com")!) }
 
     private func openSettings() {
         if let window = settingsWindow, window.isVisible {
