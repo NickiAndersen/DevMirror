@@ -21,6 +21,7 @@ package: build
 	cp .build/$(CONFIGURATION)/$(APP_NAME) $(BUNDLE_DIR)/Contents/MacOS/
 	cp Resources/Info.plist $(BUNDLE_DIR)/Contents/
 	if [ -f Resources/AppIcon.icns ]; then cp Resources/AppIcon.icns $(BUNDLE_DIR)/Contents/Resources/; fi
+	codesign --sign - --force $(BUNDLE_DIR)
 	touch $(BUNDLE_DIR)
 
 install: package

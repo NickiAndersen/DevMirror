@@ -5,7 +5,7 @@ final class TypesTests: XCTestCase {
     func testDefaultConfig() {
         let config = MirrorConfig.default
         XCTAssertEqual(config.sourcePath, NSHomeDirectory() + "/Developer")
-        XCTAssertEqual(config.destinationPath, NSHomeDirectory() + "/Documents/DevMirror")
+        XCTAssertEqual(config.destinationPath, NSHomeDirectory() + "/DevMirror")
         XCTAssertTrue(config.includeGitFolders)
         XCTAssertEqual(config.deletionPolicy, .safeArchive)
         XCTAssertEqual(config.syncMode, .every30min)
