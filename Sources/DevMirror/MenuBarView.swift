@@ -3,6 +3,7 @@ import MirrorCore
 
 struct MenuBarContentView: View {
     @Bindable var viewModel: AppViewModel
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -50,7 +51,7 @@ struct MenuBarContentView: View {
             }
 
             Button("Open Settings...") {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                openSettings()
             }
 
             Divider()
