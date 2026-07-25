@@ -1,6 +1,6 @@
 import Foundation
 
-public enum SyncState: Equatable, Hashable {
+public enum SyncState: Equatable, Hashable, Sendable {
     case idle
     case scanning
     case syncing(filesProcessed: Int, totalFiles: Int)
@@ -8,13 +8,13 @@ public enum SyncState: Equatable, Hashable {
     case error(String)
 }
 
-public enum DeletionPolicy: String, CaseIterable, Codable, Hashable {
+public enum DeletionPolicy: String, CaseIterable, Codable, Hashable, Sendable {
     case safeArchive
     case exactMirror
     case never
 }
 
-public struct MirrorConfig: Codable {
+public struct MirrorConfig: Codable, Sendable {
     public var sourcePath: String
     public var destinationPath: String
     public var excludedNames: Set<String>
@@ -56,7 +56,7 @@ public struct MirrorConfig: Codable {
     }()
 }
 
-public struct SyncEvent: Identifiable, Hashable {
+public struct SyncEvent: Identifiable, Hashable, Sendable {
     public let id = UUID()
     public let path: String
     public let action: String

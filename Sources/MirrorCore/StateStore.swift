@@ -1,6 +1,6 @@
 import Foundation
 
-public final class StateStore {
+public final class StateStore: @unchecked Sendable {
     public static let shared = StateStore()
 
     public func save(config: MirrorConfig) throws {}
