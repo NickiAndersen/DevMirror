@@ -16,6 +16,7 @@ final class AppViewModel: @unchecked Sendable {
     private var syncQueue: SyncQueue?
     private var watcher: FSEventsWatcher?
     private var activityToken: NSObjectProtocol?
+    private var periodicTimer: Timer?
 
     init() {
         let saved = StateStore.shared.loadConfig()
@@ -122,15 +123,22 @@ final class AppViewModel: @unchecked Sendable {
             self?.runFullScan()
         }
 
-        let lastID = StateStore.shared.lastEventID() ?? UInt64(kFSEventStreamEventIdSinceNow)
-        w.start(lastEventID: lastID)
-        watcher = w
+        if config.syncMode == .realtime {
+            let lastID = StateStore.shared.lastEventID() ?? UInt64(kFSEventStreamEventIdSinceNow)
+            w.start(lastEventID: lastID)
+            watcher = w
+        } else {
+            watcher = w
+            startPeriodicTimer()
+        }
 
         runFullScan()
     }
 
     func stopService() {
         endActivity()
+        periodicTimer?.invalidate()
+        periodicTimer = nil
         syncQueue = nil
         watcher?.stop()
         watcher = nil
@@ -203,6 +211,14 @@ final class AppViewModel: @unchecked Sendable {
     }
 
     // MARK: - Private
+
+    private func startPeriodicTimer() {
+        guard let interval = config.syncMode.intervalSeconds else { return }
+        periodicTimer?.invalidate()
+        periodicTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.runFullScan()
+        }
+    }
 
     private func isDestinationInsideSource() -> Bool {
         let src = URL(fileURLWithPath: config.sourcePath).standardizedFileURL.path

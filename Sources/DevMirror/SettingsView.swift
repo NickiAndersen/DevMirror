@@ -50,6 +50,12 @@ private struct GeneralPane: View {
             }
 
             Section("Sync Options") {
+                Picker("Sync frequency:", selection: $viewModel.config.syncMode) {
+                    ForEach(SyncMode.allCases, id: \.self) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+
                 Toggle("Include .git folders", isOn: $viewModel.config.includeGitFolders)
 
                 Picker("When files are deleted:", selection: $viewModel.config.deletionPolicy) {
