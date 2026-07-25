@@ -35,12 +35,27 @@ public struct ReconcileScanner {
 
         // Walk source, build set of relative paths, detect changed/new files
         var sourcePaths = Set<String>()
+        var enumeratedCount = 0
         if let enumerator = fileManager.enumerator(
             at: sourceURL,
             includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey],
-            options: []
+            options: [],
+            errorHandler: { url, error in
+                StateStore.shared.logEvent(SyncEvent(
+                    path: url.path,
+                    action: "enum_error: \(error.localizedDescription)"
+                ))
+                return true
+            }
         ) {
             for case let url as URL in enumerator {
+                enumeratedCount += 1
+                if enumeratedCount % 1000 == 0 {
+                    StateStore.shared.logEvent(SyncEvent(
+                        path: "enumerator at \(enumeratedCount)",
+                        action: "scanning"
+                    ))
+                }
                 let normalizedURL = url.standardizedFileURL
                 let relativePath = normalizedURL.path.replacingOccurrences(of: sourcePrefix, with: "")
 
@@ -81,7 +96,14 @@ public struct ReconcileScanner {
             if let enumerator = fileManager.enumerator(
                 at: destURL,
                 includingPropertiesForKeys: [.isDirectoryKey],
-                options: []
+                options: [],
+                errorHandler: { url, error in
+                    StateStore.shared.logEvent(SyncEvent(
+                        path: url.path,
+                        action: "dest_enum_error: \(error.localizedDescription)"
+                    ))
+                    return true
+                }
             ) {
                 for case let url as URL in enumerator {
                     let normalizedURL = url.standardizedFileURL

@@ -9,7 +9,7 @@ public final class SyncQueue: @unchecked Sendable {
 
     private let workQueue = DispatchQueue(label: "devmirror.syncqueue", qos: .utility)
     private let ioQueue = DispatchQueue(label: "devmirror.syncqueue.io", qos: .utility, attributes: .concurrent)
-    private let ioLimiter = DispatchSemaphore(value: 2)
+    private let ioLimiter = DispatchSemaphore(value: 4)
     private let lock = NSLock()
 
     private var isRunning = false
@@ -204,12 +204,11 @@ public final class SyncQueue: @unchecked Sendable {
         for attempt in 1...3 {
             do {
                 try syncEngine.copyFile(from: source, to: dest)
-                logEvent(action: "copied", path: relativePath)
                 return
             } catch {
                 lastError = error
                 if attempt < 3 {
-                    Thread.sleep(forTimeInterval: TimeInterval(attempt)) // 1s, 2s backoff
+                    Thread.sleep(forTimeInterval: TimeInterval(attempt))
                 }
             }
         }

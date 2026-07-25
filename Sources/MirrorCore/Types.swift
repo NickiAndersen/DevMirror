@@ -48,6 +48,7 @@ public struct MirrorConfig: Codable, Sendable {
                 ".dart_tool", ".build", ".gradle", "xcuserdata",
                 "Index.noindex", ".next", "dist", "target",
                 "__pycache__", ".venv", ".DS_Store", ".swiftpm",
+                ".idea",
             ],
             includeGitFolders: true,
             deletionPolicy: .safeArchive,

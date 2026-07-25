@@ -33,11 +33,12 @@ public final class SyncEngine: @unchecked Sendable {
 
         defer { try? fileManager.removeItem(at: tempURL) }
 
-        let flags = copyfile_flags_t(COPYFILE_ALL | COPYFILE_CLONE)
+        let flags = copyfile_flags_t(COPYFILE_DATA | COPYFILE_STAT | COPYFILE_CLONE)
         let result = copyfile(source.path, tempURL.path, nil, flags)
 
-        guard result == 0 else {
-            throw SyncError.copyFailed(path: source.path, message: "copyfile error \(result): \(String(cString: strerror(result)))")
+        if result != 0 {
+            // Fall back to simple FileManager copy for files with problematic metadata
+            try fileManager.copyItem(at: source, to: tempURL)
         }
 
         if fileManager.fileExists(atPath: destination.path) {
