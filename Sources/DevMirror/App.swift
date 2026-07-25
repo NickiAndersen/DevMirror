@@ -1,13 +1,20 @@
 import SwiftUI
 import MirrorCore
 
-@main
-struct DevMirrorApp: App {
-    @State private var viewModel = AppViewModel()
-
-    init() {
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
     }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
+}
+
+@main
+struct DevMirrorApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var viewModel = AppViewModel()
 
     var body: some Scene {
         MenuBarExtra {
