@@ -58,11 +58,18 @@ public final class SyncQueue: @unchecked Sendable {
     // MARK: - Live events
 
     public func enqueue(_ paths: [String]) {
-        let filtered = paths.filter { !exclusionEngine.isExcluded($0) }
-        guard !filtered.isEmpty else { return }
+        let sourcePrefix = config.sourcePath.hasSuffix("/") ? config.sourcePath : config.sourcePath + "/"
+        let relativePaths = paths.compactMap { path -> String? in
+            let relative = path.hasPrefix(sourcePrefix)
+                ? String(path.dropFirst(sourcePrefix.count))
+                : path
+            guard !exclusionEngine.isExcluded(relative) else { return nil }
+            return relative
+        }
+        guard !relativePaths.isEmpty else { return }
 
         lock.withLock {
-            for path in filtered {
+            for path in relativePaths {
                 pendingPaths.insert(path)
             }
         }
