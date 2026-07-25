@@ -200,6 +200,7 @@ final class AppViewModel: @unchecked Sendable {
                     self.endActivity()
                     self.sendErrorNotification(msg)
                 }
+                self.postStateNotification()
             }
         }
         syncQueue = queue
@@ -244,6 +245,7 @@ final class AppViewModel: @unchecked Sendable {
             isPaused = true
             sendNotification(title: "Syncing paused", body: "Tap Resume in the menu bar to continue.")
         }
+        postStateNotification()
     }
 
     func runFullScan() {
@@ -369,5 +371,9 @@ final class AppViewModel: @unchecked Sendable {
         guard let token = activityToken else { return }
         ProcessInfo.processInfo.endActivity(token)
         activityToken = nil
+    }
+
+    private func postStateNotification() {
+        NotificationCenter.default.post(name: .devmirrorStateChanged, object: nil)
     }
 }
