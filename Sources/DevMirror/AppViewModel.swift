@@ -193,6 +193,8 @@ final class AppViewModel: @unchecked Sendable {
     }
 
     func runFullScan() {
+        hasError = false
+        errorMessage = ""
         let queue = syncQueue
         let w = watcher
         Task.detached(priority: .utility) { [weak self] in

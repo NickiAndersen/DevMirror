@@ -29,8 +29,18 @@ struct MenuBarContentView: View {
             .foregroundStyle(.secondary)
             .padding(.leading, 14)
 
-            errorSection
+            if viewModel.hasError {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Error")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                    Text(viewModel.errorMessage)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                }
                 .padding(.top, 4)
+            }
 
             Divider()
                 .padding(.top, 4)
@@ -69,24 +79,6 @@ struct MenuBarContentView: View {
         }
         .padding()
         .frame(minWidth: 240)
-        .fixedSize()
-    }
-
-    @ViewBuilder
-    private var errorSection: some View {
-        let hasError = viewModel.hasError
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Error")
-                .font(.caption)
-                .foregroundStyle(.red)
-            Text(viewModel.errorMessage)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-        }
-        .opacity(hasError ? 1 : 0)
-        .frame(height: hasError ? nil : 0, alignment: .top)
-        .clipped()
     }
 }
 
