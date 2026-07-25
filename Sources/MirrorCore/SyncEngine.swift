@@ -56,34 +56,6 @@ public final class SyncEngine: @unchecked Sendable {
         return (size, mtime)
     }
 
-    public func isReadable(at url: URL) -> Bool {
-        guard isRegularFile(at: url) else { return true }
-        let sem = DispatchSemaphore(value: 0)
-        var readable = false
-
-        DispatchQueue.global(qos: .utility).async {
-            let fd = open(url.path, O_RDONLY)
-            guard fd >= 0 else { sem.signal(); return }
-            defer { close(fd) }
-            var buf: UInt8 = 0
-            readable = (pread(fd, &buf, 1, 0) == 1)
-            sem.signal()
-        }
-
-        if sem.wait(timeout: .now() + 3.0) == .timedOut {
-            return false
-        }
-        return readable
-    }
-
-    private func isRegularFile(at url: URL) -> Bool {
-        var isDir: ObjCBool = false
-        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDir) else { return false }
-        if isDir.boolValue { return false }
-        if isSymlink(at: url) { return false }
-        return true
-    }
-
     public func isDirectory(at url: URL) -> Bool {
         var isDir: ObjCBool = false
         guard fileManager.fileExists(atPath: url.path, isDirectory: &isDir) else { return false }

@@ -249,12 +249,6 @@ public final class SyncQueue: @unchecked Sendable {
     }
 
     private func copyWithRetry(source: URL, dest: URL, relativePath: String) {
-        // Skip files that can't be read at all (filesystem corruption etc.)
-        if !syncEngine.isReadable(at: source) {
-            logEvent(action: "skipped_unreadable", path: relativePath)
-            return
-        }
-
         var lastError: Error?
         for attempt in 1...3 {
             do {
@@ -269,7 +263,6 @@ public final class SyncQueue: @unchecked Sendable {
         }
         if let error = lastError {
             logEvent(action: "copy_error", path: relativePath, error: error)
-            setState(.error("Failed to copy: \(relativePath)"))
         }
     }
 
