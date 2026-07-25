@@ -71,12 +71,11 @@ struct DevMirrorApp: App {
         MenuBarExtra {
             MenuBarContentView(viewModel: appDelegate.viewModel)
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: 3) {
                 Circle()
                     .fill(statusColor)
-                    .frame(width: 8, height: 8)
-                Text(statusLabel)
-                    .font(.caption)
+                    .frame(width: 7, height: 7)
+                Image(systemName: statusIcon)
             }
         }
 
@@ -84,6 +83,15 @@ struct DevMirrorApp: App {
             SettingsView(viewModel: appDelegate.viewModel)
         }
         .windowResizability(.contentSize)
+    }
+
+    private var statusIcon: String {
+        if appDelegate.viewModel.hasError { return "externaldrive.badge.xmark" }
+        if appDelegate.viewModel.isPaused { return "externaldrive" }
+        switch appDelegate.viewModel.syncState {
+        case .scanning, .syncing: return "externaldrive.badge.plus"
+        default: return "externaldrive"
+        }
     }
 
     private var statusColor: Color {
@@ -94,20 +102,6 @@ struct DevMirrorApp: App {
         case .idle: return .green
         case .paused: return .yellow
         case .error: return .red
-        }
-    }
-
-    private var statusLabel: String {
-        let vm = appDelegate.viewModel
-        if vm.hasError { return "Error" }
-        if vm.isPaused { return "Paused" }
-        switch vm.syncState {
-        case .idle: return "\(vm.sourceFolderName) → \(vm.destinationFolderName)"
-        case .scanning: return "Scanning..."
-        case .syncing(let done, let total):
-            return total > 0 ? "\(done)/\(total)" : "Syncing..."
-        case .paused: return "Paused"
-        case .error: return "Error"
         }
     }
 }
