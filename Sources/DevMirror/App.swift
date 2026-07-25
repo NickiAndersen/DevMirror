@@ -70,49 +70,47 @@ extension Notification.Name {
 @main
 struct DevMirrorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @State private var tick = 0
+    @State private var dotColor = Color.green
+    @State private var barIcon = "externaldrive"
 
     var body: some Scene {
         MenuBarExtra {
             MenuBarContentView(viewModel: appDelegate.viewModel)
         } label: {
-            let vm = appDelegate.viewModel
-            let _ = tick // Force re-render on notification
-
-            let color: Color = {
-                if vm.hasError { return .red }
-                if vm.isPaused { return .yellow }
-                switch vm.syncState {
-                case .scanning, .syncing: return .blue
-                case .idle: return .green
-                case .paused: return .yellow
-                case .error: return .red
-                }
-            }()
-
-            let icon: String = {
-                if vm.hasError { return "externaldrive.badge.xmark" }
-                if vm.isPaused { return "externaldrive" }
-                switch vm.syncState {
-                case .scanning, .syncing: return "externaldrive.badge.plus"
-                default: return "externaldrive"
-                }
-            }()
-
             HStack(spacing: 3) {
                 Circle()
-                    .fill(color)
+                    .fill(dotColor)
                     .frame(width: 7, height: 7)
-                Image(systemName: icon)
+                Image(systemName: barIcon)
             }
-            .onReceive(NotificationCenter.default.publisher(for: .devmirrorStateChanged)) { _ in
-                tick &+= 1
-            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .devmirrorStateChanged)) { _ in
+            refreshStatus()
         }
 
         Window("DevMirror Settings", id: "settings") {
             SettingsView(viewModel: appDelegate.viewModel)
         }
         .windowResizability(.contentSize)
+    }
+
+    private func refreshStatus() {
+        let vm = appDelegate.viewModel
+        if vm.hasError {
+            dotColor = .red; barIcon = "externaldrive.badge.xmark"
+        } else if vm.isPaused {
+            dotColor = .yellow; barIcon = "externaldrive"
+        } else {
+            switch vm.syncState {
+            case .scanning, .syncing:
+                dotColor = .blue; barIcon = "externaldrive.badge.plus"
+            case .idle:
+                dotColor = .green; barIcon = "externaldrive"
+            case .paused:
+                dotColor = .yellow; barIcon = "externaldrive"
+            case .error:
+                dotColor = .red; barIcon = "externaldrive.badge.xmark"
+            }
+        }
     }
 }
