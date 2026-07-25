@@ -34,7 +34,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
 
     // MARK: - Status bar icon + popover menu
 
-    private func setupStatusItem() {
+    @MainActor private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem?.button {
             button.target = self
@@ -61,7 +61,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
     }
 
-    @objc private func togglePopover() {
+    @MainActor @objc private func togglePopover() {
         guard let popover = popover, let button = statusItem?.button else { return }
         if popover.isShown {
             popover.close()
@@ -71,7 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         }
     }
 
-    func updateStatusIcon() {
+    @MainActor func updateStatusIcon() {
         guard let button = statusItem?.button else { return }
         let vm = viewModel
 
@@ -157,7 +157,7 @@ extension Notification.Name {
 
 // Environment key so menu items can close the popover
 struct ClosePopoverKey: EnvironmentKey {
-    static let defaultValue: () -> Void = {}
+    static let defaultValue: @Sendable () -> Void = {}
 }
 
 extension EnvironmentValues {
