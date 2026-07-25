@@ -5,9 +5,10 @@ final class TypesTests: XCTestCase {
     func testDefaultConfig() {
         let config = MirrorConfig.default
         XCTAssertEqual(config.sourcePath, NSHomeDirectory() + "/Developer")
-        XCTAssertEqual(config.destinationPath, NSHomeDirectory() + "/Documents/DeveloperBackup")
+        XCTAssertEqual(config.destinationPath, NSHomeDirectory() + "/Documents/DevMirror")
         XCTAssertTrue(config.includeGitFolders)
         XCTAssertEqual(config.deletionPolicy, .safeArchive)
+        XCTAssertEqual(config.syncMode, .every30min)
         XCTAssertEqual(config.trashRetentionDays, 30)
         XCTAssertTrue(config.excludedNames.contains("node_modules"))
         XCTAssertTrue(config.excludedNames.contains("build"))

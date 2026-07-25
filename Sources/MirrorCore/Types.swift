@@ -97,7 +97,7 @@ public struct MirrorConfig: Codable, Sendable {
             ],
             includeGitFolders: true,
             deletionPolicy: .safeArchive,
-            syncMode: .realtime,
+            syncMode: .every30min,
             trashRetentionDays: 30
         )
     }()
