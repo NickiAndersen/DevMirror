@@ -87,7 +87,7 @@ public struct MirrorConfig: Codable, Sendable {
         let home = NSHomeDirectory()
         return MirrorConfig(
             sourcePath: "\(home)/Developer",
-            destinationPath: "\(home)/Documents/DeveloperBackup",
+            destinationPath: "\(home)/Documents/DevMirror",
             excludedNames: [
                 "node_modules", "build", "Pods", "DerivedData",
                 ".dart_tool", ".build", ".gradle", "xcuserdata",
