@@ -26,6 +26,7 @@ private struct GeneralPane: View {
     @Bindable var viewModel: AppViewModel
     @State private var validationMessage: String?
     @State private var validationIsWarning = false
+    @State private var showTrashAlert = false
 
     var body: some View {
         Form {
@@ -75,6 +76,25 @@ private struct GeneralPane: View {
                         Text("30 days").tag(30)
                         Text("60 days").tag(60)
                         Text("90 days").tag(90)
+                    }
+
+                    HStack {
+                        Label("Trash: \(viewModel.trashSize)", systemImage: "trash")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        if viewModel.trashFileCount > 0 {
+                            Button("Empty Trash Now") {
+                                showTrashAlert = true
+                            }
+                        }
+                    }
+                    .alert("Empty Trash?", isPresented: $showTrashAlert) {
+                        Button("Cancel", role: .cancel) {}
+                        Button("Delete \(viewModel.trashFileCount) files", role: .destructive) {
+                            viewModel.emptyTrash()
+                        }
+                    } message: {
+                        Text("This will permanently delete \(viewModel.trashFileCount) files from the trash. This cannot be undone.")
                     }
                 }
             } header: {

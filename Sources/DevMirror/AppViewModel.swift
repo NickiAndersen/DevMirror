@@ -100,6 +100,34 @@ final class AppViewModel: @unchecked Sendable {
         NSWorkspace.shared.open(URL(fileURLWithPath: config.sourcePath))
     }
 
+    // MARK: - Trash
+
+    var trashPath: String {
+        URL(fileURLWithPath: config.destinationPath)
+            .appendingPathComponent("_DevMirrorTrash").path
+    }
+
+    var trashSize: String {
+        let url = URL(fileURLWithPath: trashPath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return "Empty" }
+        return url.formattedSize
+    }
+
+    var trashFileCount: Int {
+        let url = URL(fileURLWithPath: trashPath)
+        guard FileManager.default.fileExists(atPath: url.path),
+              let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: nil)
+        else { return 0 }
+        return enumerator.allObjects.count
+    }
+
+    func emptyTrash() {
+        let url = URL(fileURLWithPath: trashPath)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        try? FileManager.default.removeItem(at: url)
+        StateStore.shared.logEvent(SyncEvent(path: "_DevMirrorTrash", action: "trash_emptied"))
+    }
+
     // MARK: - Service
 
     func startService() {
@@ -318,5 +346,14 @@ final class AppViewModel: @unchecked Sendable {
         guard let token = activityToken else { return }
         ProcessInfo.processInfo.endActivity(token)
         activityToken = nil
+    }
+}
+
+extension URL {
+    var formattedSize: String {
+        guard let values = try? resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey]),
+              let size = values.totalFileAllocatedSize ?? values.fileAllocatedSize
+        else { return "Empty" }
+        return ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
     }
 }
