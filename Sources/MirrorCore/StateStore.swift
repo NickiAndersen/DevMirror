@@ -8,10 +8,15 @@ public final class StateStore: @unchecked Sendable {
     private var cachedConfig: MirrorConfig?
     private let maxEvents = 500
     private var loggedCorrupted = Set<String>()
+    private let appSupportDir: URL
 
-    private var appSupportDir: URL {
-        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        return base.appendingPathComponent("DevMirror", isDirectory: true)
+    public init(appSupportDir: URL? = nil) {
+        if let dir = appSupportDir {
+            self.appSupportDir = dir
+        } else {
+            let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            self.appSupportDir = base.appendingPathComponent("DevMirror", isDirectory: true)
+        }
     }
 
     private var configURL: URL {

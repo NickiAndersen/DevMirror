@@ -2,20 +2,18 @@ import XCTest
 @testable import MirrorCore
 
 final class StateStoreTests: XCTestCase {
-    let store = StateStore.shared
+    var store: StateStore!
     var tempDir: URL!
 
     override func setUp() async throws {
         tempDir = FileManager.default.temporaryDirectory
             .appendingPathComponent("StateStoreTests_\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-
-        // Patch config dir? No — StateStore uses fixed paths.
-        // Instead, test with the actual store and clean up after.
+        store = StateStore(appSupportDir: tempDir)
     }
 
     override func tearDown() async throws {
-        store.clearEvents()
+        store = nil
         try? FileManager.default.removeItem(at: tempDir)
     }
 
@@ -29,7 +27,6 @@ final class StateStoreTests: XCTestCase {
     }
 
     func testLogAndLoadEvents() {
-        store.clearEvents()
         store.logEvent(SyncEvent(path: "a.swift", action: "copied"))
         store.logEvent(SyncEvent(path: "b.swift", action: "deleted"))
 
@@ -40,7 +37,6 @@ final class StateStoreTests: XCTestCase {
     }
 
     func testEventRingBuffer() {
-        store.clearEvents()
         for i in 0..<600 {
             store.logEvent(SyncEvent(path: "file_\(i)", action: "copied"))
         }
@@ -59,14 +55,10 @@ final class StateStoreTests: XCTestCase {
     }
 
     func testLastEventIDReturnsNilWhenNotSet() {
-        // Can't test clean state easily without deleting file.
-        // The store returns nil when file doesn't exist.
-        // Skip if file was previously set.
+        XCTAssertNil(store.lastEventID())
     }
 
     func testDedupSkippedCorrupted() {
-        store.clearEvents()
-
         store.logEvent(SyncEvent(path: "a.swift", action: "skipped_corrupted"))
         store.logEvent(SyncEvent(path: "a.swift", action: "skipped_corrupted"))
         store.logEvent(SyncEvent(path: "b.swift", action: "skipped_corrupted"))
