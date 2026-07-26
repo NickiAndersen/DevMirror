@@ -7,6 +7,7 @@ public final class StateStore: @unchecked Sendable {
     private let lock = NSLock()
     private var cachedConfig: MirrorConfig?
     private let maxEvents = 500
+    private var loggedCorrupted = Set<String>()
 
     private var appSupportDir: URL {
         let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -49,6 +50,10 @@ public final class StateStore: @unchecked Sendable {
 
     public func logEvent(_ event: SyncEvent) {
         lock.withLock {
+            if event.action == "skipped_corrupted" {
+                if loggedCorrupted.contains(event.path) { return }
+                loggedCorrupted.insert(event.path)
+            }
             var events = loadEventsUnsafe()
             events.append(event)
             if events.count > maxEvents {

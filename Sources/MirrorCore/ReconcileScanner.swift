@@ -68,14 +68,14 @@ public struct ReconcileScanner {
                 let destFileURL = destURL.appendingPathComponent(relativePath)
 
                 if syncEngine.isDirectory(at: url) {
-                    // Create directories as needed — symlinks handled in copy
                     if let isSymlink = try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink,
                        isSymlink {
                         if !syncEngine.filesMatch(source: url, dest: destFileURL) {
                             toCopy.append(relativePath)
                         }
+                    } else if !syncEngine.fileExists(at: destFileURL) {
+                        toCopy.append(relativePath)
                     }
-                    // Regular directories are created implicitly during file copy
                     sourcePaths.insert(relativePath)
                     continue
                 }

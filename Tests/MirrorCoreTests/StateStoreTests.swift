@@ -63,4 +63,18 @@ final class StateStoreTests: XCTestCase {
         // The store returns nil when file doesn't exist.
         // Skip if file was previously set.
     }
+
+    func testDedupSkippedCorrupted() {
+        store.clearEvents()
+
+        store.logEvent(SyncEvent(path: "a.swift", action: "skipped_corrupted"))
+        store.logEvent(SyncEvent(path: "a.swift", action: "skipped_corrupted"))
+        store.logEvent(SyncEvent(path: "b.swift", action: "skipped_corrupted"))
+        store.logEvent(SyncEvent(path: "copied.swift", action: "copied"))
+
+        let events = store.loadEvents()
+        let corrupted = events.filter { $0.action == "skipped_corrupted" }
+        XCTAssertEqual(corrupted.count, 2, "Duplicate skipped_corrupted paths should be deduplicated")
+        XCTAssertEqual(events.count, 3, "Should have 2 unique corrupted + 1 copied event")
+    }
 }

@@ -87,7 +87,7 @@ public final class SyncEngine: @unchecked Sendable {
             sem.signal()
         }
 
-        if sem.wait(timeout: .now() + 2.0) == .timedOut {
+        if sem.wait(timeout: .now() + 0.15) == .timedOut {
             return false
         }
         return result.pointee

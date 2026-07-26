@@ -117,4 +117,46 @@ final class ReconcileScannerTests: XCTestCase {
 
         XCTAssertTrue(result.toCopy.contains("a/b/c/deep.swift"))
     }
+
+    func testScansEmptyDirectory() throws {
+        try FileManager.default.createDirectory(
+            at: sourceDir.appendingPathComponent("empty"),
+            withIntermediateDirectories: true
+        )
+
+        let scanner = makeScanner()
+        let result = try scanner.scan()
+
+        XCTAssertTrue(result.toCopy.contains("empty"), "Empty directory should be in toCopy")
+    }
+
+    func testScansEmptyNestedDirectory() throws {
+        try FileManager.default.createDirectory(
+            at: sourceDir.appendingPathComponent("a/b/c"),
+            withIntermediateDirectories: true
+        )
+
+        let scanner = makeScanner()
+        let result = try scanner.scan()
+
+        XCTAssertTrue(result.toCopy.contains("a"))
+        XCTAssertTrue(result.toCopy.contains("a/b"))
+        XCTAssertTrue(result.toCopy.contains("a/b/c"))
+    }
+
+    func testEmptyDirectoryAlreadyInDestNotCopied() throws {
+        try FileManager.default.createDirectory(
+            at: sourceDir.appendingPathComponent("same"),
+            withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(
+            at: destDir.appendingPathComponent("same"),
+            withIntermediateDirectories: true
+        )
+
+        let scanner = makeScanner()
+        let result = try scanner.scan()
+
+        XCTAssertFalse(result.toCopy.contains("same"), "Directory that exists in dest should not be in toCopy")
+    }
 }

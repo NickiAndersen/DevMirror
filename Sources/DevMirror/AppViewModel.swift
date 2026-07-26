@@ -215,16 +215,15 @@ final class AppViewModel: @unchecked Sendable {
             self.runFullScan()
         }
 
-        if config.syncMode == .realtime {
+        watcher = w
+
+        if config.syncMode != .manual {
             let lastID = StateStore.shared.lastEventID() ?? UInt64(kFSEventStreamEventIdSinceNow)
             w.start(lastEventID: lastID)
-            watcher = w
-            runFullScan()
-        } else {
-            watcher = w
             startPeriodicTimer()
-            sendNotification(title: "DevMirror ready", body: "Syncing every \(config.syncMode.displayName).")
         }
+
+        runFullScan()
     }
 
     func stopService() {
