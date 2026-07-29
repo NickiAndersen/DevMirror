@@ -288,6 +288,39 @@ private struct AboutPane: View {
                 .foregroundStyle(.tertiary)
                 .padding(.horizontal)
 
+            Divider()
+                .frame(width: 200)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "bolt")
+                        .frame(width: 16)
+                    Text("Real-time sync via FSEvents")
+                }
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .frame(width: 16)
+                    Text("2-second debounce, async I/O")
+                }
+                HStack(spacing: 6) {
+                    Image(systemName: "square.grid.3x3.topleft.filled")
+                        .frame(width: 16)
+                    Text("Excludes build artifacts (17 patterns)")
+                }
+                HStack(spacing: 6) {
+                    Image(systemName: "trash")
+                        .frame(width: 16)
+                    Text("Safe delete with 30-day retention")
+                }
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.trianglehead.branch")
+                        .frame(width: 16)
+                    Text("Mirrors .git history and uncommitted work")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
             Spacer()
 
             Text("© 2026 DevMirror, part of THYRING")
