@@ -44,9 +44,19 @@ public final class StateStore: @unchecked Sendable {
         lock.withLock {
             if let cached = cachedConfig { return cached }
             guard let data = try? Data(contentsOf: configURL),
-                  let config = try? JSONDecoder().decode(MirrorConfig.self, from: data)
+                  var config = try? JSONDecoder().decode(MirrorConfig.self, from: data)
             else {
                 return .default
+            }
+            let newDefaults = MirrorConfig.default.excludedNames
+            if !newDefaults.isSubset(of: config.excludedNames) {
+                config.excludedNames.formUnion(newDefaults)
+                cachedConfig = config
+                try? fileManager.createDirectory(at: appSupportDir, withIntermediateDirectories: true)
+                if let updated = try? JSONEncoder().encode(config) {
+                    try? updated.write(to: configURL, options: .atomic)
+                }
+                return config
             }
             cachedConfig = config
             return config
