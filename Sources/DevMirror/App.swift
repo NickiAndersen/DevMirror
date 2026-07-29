@@ -73,10 +73,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @unchecked Sendable {
         menu.addItem(headerItem)
 
         let byItem = NSMenuItem()
-        byItem.title = "by THYRING"
+        byItem.title = "© 2026 THYRING"
         byItem.isEnabled = false
         byItem.attributedTitle = NSAttributedString(
-            string: "by THYRING",
+            string: "© 2026 THYRING",
             attributes: [.font: NSFont.menuFont(ofSize: NSFont.smallSystemFontSize),
                          .foregroundColor: NSColor.tertiaryLabelColor]
         )

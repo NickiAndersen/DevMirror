@@ -278,11 +278,11 @@ private struct AboutPane: View {
             Text("Version 1.0")
                 .foregroundStyle(.secondary)
 
-            Text("Mirrors a folder to a backup location in real time.\nExcludes build/cache folders for lean copies.")
+            Text("Real-time backup for developers.\nCode without cloud sync conflicts.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            Text("Choose a source folder to watch, and a destination folder to keep an exact mirror.")
+            Text("Separates your workspace from your cloud sync, so AI tools like Cursor and Windsurf never fight with Google Drive or iCloud. Keeps your git history and uncommitted work safe in a mirrored backup.")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.tertiary)
@@ -290,7 +290,7 @@ private struct AboutPane: View {
 
             Spacer()
 
-            Text("Made by THYRING")
+            Text("© 2026 DevMirror, part of THYRING")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
