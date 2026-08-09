@@ -3,8 +3,12 @@
 *Code locally. Back up to the cloud. Zero conflicts.*
 
 ![Platform](https://img.shields.io/badge/macOS-14%2B-blue)
-![Swift](https://img.shields.io/badge/Swift-6.3-orange)
+![Swift](https://img.shields.io/badge/Swift-6.0-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+<p align="center">
+  <img src="Resources/AppIcon.png" width="128" alt="DevMirror icon">
+</p>
 
 ## The Problem
 
