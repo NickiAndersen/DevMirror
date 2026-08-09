@@ -6,6 +6,10 @@
 ![Swift](https://img.shields.io/badge/Swift-6.0-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+<p align="center">
+  <img src="Resources/AppIcon.png" width="128" alt="DevMirror icon">
+</p>
+
 ## The Problem
 
 You write code in **Cursor** (or Windsurf, VS Code). You back it up with **Google Drive** (or iCloud, Dropbox). But running both on the same folder is a nightmare:
