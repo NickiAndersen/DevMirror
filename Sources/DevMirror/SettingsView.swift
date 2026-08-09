@@ -246,8 +246,8 @@ private struct ActivityPane: View {
                     .prefix(50)
                 ) { event in
                     HStack {
-                        Image(systemName: event.action == "sync_complete" ? "arrow.trianglehead.clockwise" : (event.action.contains("error") ? "xmark.circle" : "checkmark.circle"))
-                            .foregroundStyle(event.action.contains("error") ? .red : event.action == "sync_complete" ? .blue : .green)
+                        Image(systemName: event.action.contains("error") ? "xmark.circle" : "checkmark.circle")
+                            .foregroundStyle(event.action.contains("error") ? .red : .green)
                         VStack(alignment: .leading) {
                             Text(event.path)
                                 .lineLimit(1)
