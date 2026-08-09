@@ -63,10 +63,10 @@ DevMirror lives quietly in your menu bar. The colored dot shows your sync status
 
 | Icon | Meaning |
 |------|---------|
-| ● Green | Watching, everything synced |
-| ● Blue | Syncing in progress |
-| ● Yellow | Paused |
-| ● Red | Error |
+| 🟢 | Watching, everything synced |
+| 🔵 | Syncing in progress |
+| 🟡 | Paused |
+| 🔴 | Error |
 
 Click the icon to pause/resume, trigger a manual sync, open folders, or access settings.
 
