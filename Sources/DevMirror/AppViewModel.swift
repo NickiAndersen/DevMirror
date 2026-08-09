@@ -34,6 +34,7 @@ final class AppViewModel: @unchecked Sendable {
     private var lastSyncFileCount = 0
     private var isFullScanRunning = false
     private var lastSyncTimestamp: Date?
+    private var lastSyncCompleteLogged: Date?
 
     init() {
         let saved = StateStore.shared.loadConfig()
@@ -188,6 +189,15 @@ final class AppViewModel: @unchecked Sendable {
                 case .idle:
                     self.endActivity()
                     if self.lastSyncFileCount > 0 {
+                        let now = Date()
+                        if self.lastSyncCompleteLogged == nil
+                           || now.timeIntervalSince(self.lastSyncCompleteLogged!) >= 10 {
+                            StateStore.shared.logEvent(SyncEvent(
+                                path: "\(self.lastSyncFileCount) files synced",
+                                action: "sync_complete"
+                            ))
+                            self.lastSyncCompleteLogged = now
+                        }
                         self.lastSyncTimestamp = Date()
                         self.sendCompletionNotification(fileCount: self.lastSyncFileCount)
                         self.lastSyncFileCount = 0
