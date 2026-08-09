@@ -245,9 +245,10 @@ private struct ActivityPane: View {
                     .sorted(by: { $0.timestamp > $1.timestamp })
                     .prefix(50)
                 ) { event in
+                    let isError = event.action.contains("error") || event.action == "skipped_corrupted"
                     HStack {
-                        Image(systemName: event.action == "sync_complete" ? "arrow.trianglehead.clockwise" : (event.action.contains("error") ? "xmark.circle" : "checkmark.circle"))
-                            .foregroundStyle(event.action.contains("error") ? .red : event.action == "sync_complete" ? .blue : .green)
+                        Image(systemName: event.action == "sync_complete" ? "arrow.trianglehead.clockwise" : (isError ? "xmark.circle" : "checkmark.circle"))
+                            .foregroundStyle(isError ? .red : event.action == "sync_complete" ? .blue : .green)
                         VStack(alignment: .leading) {
                             Text(event.path)
                                 .lineLimit(1)
