@@ -50,12 +50,6 @@ public struct ReconcileScanner {
         ) {
             for case let url as URL in enumerator {
                 enumeratedCount += 1
-                if enumeratedCount % 1000 == 0 {
-                    StateStore.shared.logEvent(SyncEvent(
-                        path: "enumerator at \(enumeratedCount)",
-                        action: "scanning"
-                    ))
-                }
                 let normalizedURL = url.standardizedFileURL
                 let relativePath = normalizedURL.path.replacingOccurrences(of: sourcePrefix, with: "")
 

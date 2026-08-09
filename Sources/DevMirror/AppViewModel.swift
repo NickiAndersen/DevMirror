@@ -188,6 +188,10 @@ final class AppViewModel: @unchecked Sendable {
                 case .idle:
                     self.endActivity()
                     if self.lastSyncFileCount > 0 {
+                        StateStore.shared.logEvent(SyncEvent(
+                            path: "\(self.lastSyncFileCount) files synced",
+                            action: "sync_complete"
+                        ))
                         self.lastSyncTimestamp = Date()
                         self.sendCompletionNotification(fileCount: self.lastSyncFileCount)
                         self.lastSyncFileCount = 0

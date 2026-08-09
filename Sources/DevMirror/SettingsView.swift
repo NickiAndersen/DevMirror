@@ -240,10 +240,14 @@ private struct ActivityPane: View {
                     .foregroundStyle(.secondary)
                 Spacer()
             } else {
-                List(viewModel.recentEvents.sorted(by: { $0.timestamp > $1.timestamp }).prefix(50)) { event in
+                List(viewModel.recentEvents
+                    .filter { $0.action != "scanning" }
+                    .sorted(by: { $0.timestamp > $1.timestamp })
+                    .prefix(50)
+                ) { event in
                     HStack {
-                        Image(systemName: event.action.contains("error") ? "xmark.circle" : "checkmark.circle")
-                            .foregroundStyle(event.action.contains("error") ? .red : .green)
+                        Image(systemName: event.action == "sync_complete" ? "arrow.trianglehead.clockwise" : (event.action.contains("error") ? "xmark.circle" : "checkmark.circle"))
+                            .foregroundStyle(event.action.contains("error") ? .red : event.action == "sync_complete" ? .blue : .green)
                         VStack(alignment: .leading) {
                             Text(event.path)
                                 .lineLimit(1)
