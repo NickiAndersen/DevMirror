@@ -51,7 +51,7 @@ make install
 - **Smart Exclusions:** Automatically ignores `node_modules`, `build`, `.next`, `Pods`, `.dart_tool`, and 38 other heavy folders.
 - **Safe Archive:** Accidental deletion? Deleted files aren't gone forever. They move to a local `_DevMirrorTrash` folder with 30-day retention.
 - **Corrupted File Detection:** Skips unreadable files, like unresolved iCloud placeholders.
-- **Native & Lightweight:** Built in Swift 6.3 with strict concurrency. Runs asynchronously in your menu bar without blocking your editor or terminal.
+- **Native & Lightweight:** Built in Swift 6.0. Runs asynchronously in your menu bar without blocking your editor or terminal.
 
 ## Usage
 
