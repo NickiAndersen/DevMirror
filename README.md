@@ -1,78 +1,38 @@
 # DevMirror
 
-Back up `~/Developer` in real time. Code without cloud sync conflicts.
+*Code locally. Back up to the cloud. Zero conflicts.*
 
 ![Platform](https://img.shields.io/badge/macOS-14%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-6.3-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## The problem
+## The Problem
 
-You use **Cursor** (or Windsurf, Copilot) to write code. You use **Google Drive**
-(or iCloud, Dropbox) to back it up. But you can't use both on the same folder.
+You write code in **Cursor** (or Windsurf, VS Code). You back it up with **Google Drive** (or iCloud, Dropbox). But running both on the same folder is a nightmare:
 
-Here's what happens when cloud sync touches your code while you work:
+- **Locked files:** Cursor's AI can't read or save a file because Google Drive has locked it for upload.
+- **Endless loops:** Cloud sync touches a file, triggering your dev server to hot-reload infinitely.
+- **Git corruption:** Sync engines often conflict with `.git/index`, causing your commits to fail.
+- **Gigabytes of trash:** `npm install` creates 50,000 files. Your cloud drive chokes trying to upload `node_modules`.
 
-- Cursor's AI can't read a file because Google Drive locked it for upload
-- `npm install` writes 50,000 files. Cloud sync chokes and never catches up
-- Git commit fails because cloud sync conflicts with `.git/index`
-- Dev server hot-reloads in an endless loop because sync touched a watched file
-- `node_modules/`, `.next/`, and `build/` get uploaded anyway: gigabytes of trash
+## How it works
 
-## The solution
-
-Keep two folders. Code in one. Back up the other. DevMirror connects them.
+DevMirror acts as a bridge between your dev environment and your cloud drive. Keep two folders: one for coding, one for syncing.
 
 ```
-~/Developer/               ← You code here. No cloud sync. Ever.
-    ├── project/
-    │   ├── .git/               Full git history
-    │   ├── src/                Cursor, npm, git. All run freely
-    │   └── ...
-    └── ...
-              ↓  DevMirror copies changes (within seconds, never mid-write)
-
-~/DevMirror/               ← Cloud sync touches only this folder
-    ├── project/
-    │   ├── .git/               Git history mirrored in real time
-    │   ├── src/                Stable copies. No conflicts.
-    │   └── ...
-    └── ...
-              ↓  Google Drive / iCloud / Dropbox uploads to the cloud
+~/Developer               DevMirror                ~/DevMirror
+(no cloud sync)      ->   mirrors changes     ->   (cloud syncs this)
+                           in real time
 ```
 
-## An extra safety net for git
+Your `.git` folder and uncommitted work are mirrored too. If your Mac crashes or your SSD dies mid-session, your work-in-progress lives on, with full git history intact. DevMirror catches what `git push` misses.
 
-DevMirror mirrors **everything**, including your `.git` folder and every
-uncommitted change. This means:
-
-- Unsaved work is backed up **before** you commit or push
-- If your disk dies or `~/Developer` gets corrupted, the mirrored copy
-  of your repo lives on, with full git history intact
-- Unlike `git push`, which only saves committed snapshots, DevMirror
-  catches work-in-progress in real time
-
-## Features
-
-- **Real-time sync** via FSEvents. Changes mirrored within seconds
-- **2-second debounce**. Never copies a file mid-write
-- **Async I/O**. Syncs without blocking your editor or terminal
-- **Atomic copies**: temp file + rename, destination never sees a partial file
-- **Empty directories**, mirrored too, so nothing is missed
-- **Safe delete**. Deleted files move to `_DevMirrorTrash/` (30-day retention)
-- **Corrupted file detection**. Skips unreadable files (iCloud placeholders, etc.)
-- **17 default exclusions**: `node_modules`, `build`, `.next`, `Pods`, and more
-- **Menu bar icon**. Colored dot shows sync status at a glance
-- **Notifications**. Optional alerts on completion or errors
-- **Launch at login**. Starts automatically
-- **Sync every:** real-time, 5 min, 15 min, 30 min, 1 hour, or manual only
-
-## Quick start
+## Install
 
 ### Download
 
 Get the latest `DevMirror.app` from [Releases](../../releases).
-Drag to `/Applications`. Open it. Done.
+Drag it to `/Applications`, open it, and you're done.
 
 ### Build from source
 
@@ -82,14 +42,24 @@ cd DevMirror
 make install
 ```
 
-**Requirements:** Xcode 16+, macOS 14+
+*Requires Xcode 16+ and macOS 14+*
+
+## Features
+
+- **Zero-Interference Sync:** Real-time sync via FSEvents with a 2-second debounce. Files are never copied while you're actively writing to them.
+- **Atomic Copies:** Files are copied to a temporary location and renamed instantly. Your destination folder never sees a half-written file.
+- **Smart Exclusions:** Automatically ignores `node_modules`, `build`, `.next`, `Pods`, `.dart_tool`, and 38 other heavy folders.
+- **Safe Archive:** Accidental deletion? Deleted files aren't gone forever. They move to a local `_DevMirrorTrash` folder with 30-day retention.
+- **Corrupted File Detection:** Skips unreadable files, like unresolved iCloud placeholders.
+- **Native & Lightweight:** Built in Swift 6.3 with strict concurrency. Runs asynchronously in your menu bar without blocking your editor or terminal.
 
 ## Usage
 
-1. Open DevMirror. First run walks through onboarding
-2. Choose source (`~/Developer`) and destination (`~/DevMirror`)
-3. Click "Start Syncing"
-4. Done. It lives in your menu bar:
+1. Open DevMirror. The first run walks you through onboarding.
+2. Choose your source (`~/Developer`) and destination (`~/DevMirror`).
+3. Click "Start Syncing".
+
+DevMirror lives quietly in your menu bar. The colored dot shows your sync status at a glance:
 
 | Icon | Meaning |
 |------|---------|
@@ -98,38 +68,18 @@ make install
 | ● Yellow | Paused |
 | ● Red | Error |
 
-Click the icon for pause/resume, manual sync, open folders, or settings.
-
-## Recommended setup
-
-| Setting | Value |
-|---------|-------|
-| Source | `~/Developer` |
-| Destination | `~/DevMirror` |
-| Sync mode | Real-time |
-| Include .git | ON |
-| Exclusions | Default (17 patterns) |
-
-Then point Google Drive (or iCloud/Dropbox) to sync `~/DevMirror`.
+Click the icon to pause/resume, trigger a manual sync, open folders, or access settings.
 
 ## Configuration
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Sync frequency | Real-time | Real-time / 5 min / 15 min / 30 min / 1 hour / Manual |
-| Include .git | On | Mirror full git history |
-| Deletion policy | Safe Archive | Keep deleted files 30 days / Exact mirror / Never |
-| Exclusions | 17 patterns | `node_modules`, `build`, `.next`, `Pods`, `.dart_tool`, etc. |
-| Notifications | Errors ON | Configurable per event type |
-
-## Tech stack
-
-- **Swift 6.3** with strict concurrency
-- **SwiftUI** menu bar app
-- **FSEvents**: kernel-level file system monitoring
-- **MirrorCore**: modular sync engine with 44 unit tests
-- **APFS clone-aware** file copying
+| **Sync frequency** | Real-time | Real-time, 5 min, 15 min, 30 min, 1 hour, or manual |
+| **Include .git** | On | Mirrors full git history and uncommitted changes |
+| **Deletion policy** | Safe Archive | Keep deleted files 30 days / Exact mirror / Never delete |
+| **Exclusions** | 43 patterns | Pre-configured to ignore build artifacts and package folders |
+| **Notifications** | Errors only | Configurable alerts |
 
 ## License
 
-MIT. See [LICENSE](LICENSE)
+MIT. See [LICENSE](LICENSE).
